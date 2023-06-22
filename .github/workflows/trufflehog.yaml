@@ -24,7 +24,7 @@ jobs:
         run: npm install @octokit/rest
 
       - name: Download and extract TruffleHog
-        shell : bash
+        shell: bash
         run: |
           wget https://github.com/trufflesecurity/trufflehog/releases/download/v3.40.0/trufflehog_3.40.0_linux_amd64.tar.gz
           tar -xzf trufflehog_3.40.0_linux_amd64.tar.gz
