@@ -37,7 +37,8 @@ jobs:
             --branch HEAD --fail --no-update --json --no-verification > secrets.json
 
       - name: Trufflehog PR commenter
-        id: hello
-        uses: therealdwright/trufflehog-secrets-detector@v1.0.0
+        id: trufflehog-pr-commneter
+        if: always()
+        uses: therealdwright/trufflehog-secrets-detector@v1.1.0
         with:
           secrets-file: secrets.json
