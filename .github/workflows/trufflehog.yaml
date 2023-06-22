@@ -1,0 +1,40 @@
+name: Pull Request
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-for-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: repository checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+
+      - name: Install dependencies
+        run: npm install @octokit/rest
+
+      - name: Download and extract TruffleHog
+        shell : bash
+        run: |
+          wget https://github.com/trufflesecurity/trufflehog/releases/download/v3.40.0/trufflehog_3.40.0_linux_amd64.tar.gz
+          tar -xzf trufflehog_3.40.0_linux_amd64.tar.gz
+          sudo mv trufflehog /usr/local/bin/
+
+      - name: TruffleHog OSS
+        shell: bash
+        run: |
+          trufflehog git file://./ --since-commit ${{ github.event.repository.default_branch }} \
+            --branch HEAD --fail --no-update --json --no-verification > secrets.json
+
+      - name: Run pull request comment script
+        if: always()
+        run: node .github/scripts/secrets.js
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
