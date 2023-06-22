@@ -1,0 +1,26 @@
+{
+  "name": "pull-request-comment-action",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
+    "@octokit/rest": "^18.12.0"
+  },
+  "description": "Detects Secrets on a GitHub Pull Request and Comments to Request Remediation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/therealdwright/trufflehog-secrets-detector.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/therealdwright/trufflehog-secrets-detector/issues"
+  },
+  "homepage": "https://github.com/therealdwright/trufflehog-secrets-detector#readme"
+}
