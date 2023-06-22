@@ -40,5 +40,7 @@ jobs:
         id: trufflehog-pr-commneter
         if: always()
         uses: therealdwright/trufflehog-secrets-detector@v1.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
         with:
           secrets-file: secrets.json
