@@ -10,9 +10,18 @@ fs.readFile(filePath, "utf8", async (err, data) => {
   if (err) {
     if (!data) {
       console.log("No data found, skipping processing...");
-      return;
-    } else console.log(`Error reading file from disk: ${err}`);
-  } else {
+    } else {
+      console.log(`Error reading file from disk: ${err}`);
+    }
+    return;
+  }
+
+  if (data.trim().length === 0) {
+    console.log("Empty file found, skipping processing...");
+    return;
+  }
+
+  try {
     const jsonData = JSON.parse(data);
 
     const repoData = getRepoData(jsonData.SourceMetadata.Data.Git.repository);
@@ -20,6 +29,7 @@ fs.readFile(filePath, "utf8", async (err, data) => {
       console.log("No repo data found, skipping processing...");
       return;
     }
+
     const commentBody = `🚨 Secret Detected 🚨\nSecret detected at line ${jsonData.SourceMetadata.Data.Git.line} in file ${jsonData.SourceMetadata.Data.Git.file}. Please review.`;
 
     try {
@@ -63,6 +73,8 @@ fs.readFile(filePath, "utf8", async (err, data) => {
         console.log("Error occurred", e);
       }
     }
+  } catch (e) {
+    console.log("Error parsing JSON:", e);
   }
 });
 
