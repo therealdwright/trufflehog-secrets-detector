@@ -21,7 +21,7 @@ jobs:
           node-version: 14
 
       - name: Install dependencies
-        run: npm install @octokit/rest
+        run: npm install @octokit/rest @actions/core
 
       - name: Download and extract TruffleHog
         shell: bash
@@ -30,14 +30,14 @@ jobs:
           tar -xzf trufflehog_3.40.0_linux_amd64.tar.gz
           sudo mv trufflehog /usr/local/bin/
 
-      - name: TruffleHog OSS
+      - name: TruffleHog secret scan
         shell: bash
         run: |
           trufflehog git file://./ --since-commit ${{ github.event.repository.default_branch }} \
             --branch HEAD --fail --no-update --json --no-verification > secrets.json
 
-      - name: Run pull request comment script
-        if: always()
-        run: node .github/scripts/secrets.js
-        env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+      - name: Trufflehog PR commenter
+        id: hello
+        uses: therealdwright/trufflehog-secrets-detector@v1.0.0
+        with:
+          secrets-file: secrets.json
