@@ -1,0 +1,9 @@
+name: Trufflehog PR Commenter
+description: Take trufflehog JSON output and comment violations on a PR
+inputs:
+  secrets-file:
+    description: Trufflehog JSON output file
+    required: true
+runs:
+  using: node16
+  main: index.js
