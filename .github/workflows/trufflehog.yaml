@@ -1,7 +1,10 @@
 name: Pull Request
 
 on:
-  workflow_dispatch:
+  workflow_call:
+    secrets:
+      token:
+        required: true
 
 jobs:
   check-for-secrets:
@@ -37,4 +40,4 @@ jobs:
         if: always()
         run: node .github/scripts/secrets.js
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.token }}
