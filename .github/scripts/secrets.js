@@ -10,6 +10,10 @@ fs.readFile(filePath, 'utf8', async (err, data) => {
   if (err) {
     console.log(`Error reading file from disk: ${err}`);
   } else {
+    if (!data) {
+        console.log("No data found, skipping processing...");
+        return;
+    }
     const jsonData = JSON.parse(data);
 
     const repoData = getRepoData(jsonData.SourceMetadata.Data.Git.repository);
