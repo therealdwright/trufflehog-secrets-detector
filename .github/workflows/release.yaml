@@ -1,0 +1,19 @@
+---
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+      - next
+      - next-major
+      - beta
+      - alpha
+      - "[0-9]+.[0-9]+.x"
+      - "[0-9]+.x"
+
+jobs:
+  release:
+    uses: semantic-release-action/github-actions/.github/workflows/release.yml@f755c1883c0ba86548242dbb1227dd0aeb7026a5 # v5.0.11
+    with:
+      disable-semantic-release-git: true
