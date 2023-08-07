@@ -14,7 +14,7 @@ Add the following step to your GitHub Actions workflow:
 
 ```yaml
 - name: Trufflehog PR Commenter
-  uses: therealdwright/trufflehog-secrets-detector@v1.0.0
+  uses: therealdwright/trufflehog-secrets-detector@v1.1.2
   with:
     secrets-file: 'path_to_output.json' # Optional, defaults to 'secrets.json'
   env:
