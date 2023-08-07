@@ -7,6 +7,8 @@
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
     "@octokit/rest": "^18.12.0",
+    "@semantic-release/commit-analyzer": "^10.0.1",
+    "@semantic-release/git": "^10.0.1",
     "axios": "^1.4.0",
     "fs": "0.0.1-security",
     "tar": "^6.1.15"
@@ -19,6 +21,12 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/therealdwright/trufflehog-secrets-detector.git"
+  },
+  "release": {
+    "branches": [
+      "main",
+      "next"
+    ]
   },
   "keywords": [],
   "author": "",

@@ -1,6 +1,10 @@
 ---
 name: Release
 
+permissions:
+  contents: write
+  issues: write
+
 on:
   push:
     branches:
@@ -14,20 +18,17 @@ on:
 
 jobs:
   release:
-    uses: semantic-release-action/github-actions/.github/workflows/release.yml@f755c1883c0ba86548242dbb1227dd0aeb7026a5 # v5.0.11
-    with:
-      branches: |
-        [
-          '+([0-9])?(.{+([0-9]),x}).x',
-          'main',
-          'next',
-          'next-major',
-          {
-            name: 'beta',
-            prerelease: true
-          },
-          {
-            name: 'alpha',
-            prerelease: true
-          }
-        ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: repository checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v3
+        id: semantic-release
+        with:
+          branch: 'main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
