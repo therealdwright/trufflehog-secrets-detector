@@ -1,6 +1,10 @@
 name: Trufflehog PR Commenter
 description: Take trufflehog JSON output and comment violations on a PR
 inputs:
+  commit:
+    description: The commit from which to check
+    required: true
+    default: ${{ github.event.repository.default_branch }}
   secrets-file:
     description: Path to save Trufflehog JSON output
     required: true
