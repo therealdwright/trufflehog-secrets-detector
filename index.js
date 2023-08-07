@@ -1,98 +1,165 @@
-const fs = require("fs");
-const { Octokit } = require("@octokit/rest");
+const axios = require("axios");
 const core = require("@actions/core");
-const github = require("@actions/github");
+const exec = require("@actions/exec");
+const fs = require('fs');
+const tar = require("tar");
+const { Octokit } = require("@octokit/rest");
 
 const token = process.env["GITHUB_TOKEN"];
 const octokit = new Octokit({ auth: `token ${token}` });
 
 const filePath = core.getInput("secrets-file");
 
-fs.readFile(filePath, "utf8", async (err, data) => {
-  if (err) {
-    if (!data) {
-      console.log("No data found, skipping processing...");
-    } else {
-      console.log(`Error reading file from disk: ${err}`);
-    }
-    return;
-  }
-
-  if (data.trim().length === 0) {
-    console.log("Empty file found, skipping processing...");
-    return;
-  }
-
-  try {
-    const jsonData = JSON.parse(data);
-
-    const repoData = getRepoData(jsonData.SourceMetadata.Data.Git.repository);
-    if (!repoData) {
-      console.log("No repo data found, skipping processing...");
-      return;
-    }
-
-    const commentBody = `🚨 Secret Detected 🚨\nSecret detected at line ${jsonData.SourceMetadata.Data.Git.line} in file ${jsonData.SourceMetadata.Data.Git.file}. Please review.`;
-
-    try {
-      const prs = await octokit.pulls.list({
-        owner: repoData.owner,
-        repo: repoData.repo,
-      });
-
-      for (const pr of prs.data) {
-        if (pr.state === "open") {
-          const commitId = await octokit.repos.getCommit({
-            owner: repoData.owner,
-            repo: repoData.repo,
-            ref: pr.head.sha,
-          });
-
-          await octokit.pulls.createReviewComment({
-            owner: repoData.owner,
-            repo: repoData.repo,
-            pull_number: pr.number,
-            body: commentBody,
-            commit_id: commitId.data.sha,
-            path: jsonData.SourceMetadata.Data.Git.file,
-            line: jsonData.SourceMetadata.Data.Git.line,
-            side: "RIGHT", // assuming the secret was added, not removed
-          });
-        }
-      }
-    } catch (e) {
-      if (
-        e.status === 422 &&
-        e.message.includes("PullRequestReviewComment") &&
-        e.message.includes("pull_request_review_thread.path") &&
-        e.message.includes("pull_request_review_thread.diff_hunk")
-      ) {
-        // Ignore the specific error relating to pull_request_review_thread.diff_hunk
-      } else if (e.status) {
-        console.log(`GitHub returned an error: ${e.status}`);
-        console.log(e.message);
-      } else {
-        console.log("Error occurred", e);
-      }
-    }
-  } catch (e) {
-    console.log("Error parsing JSON:", e);
-  }
-});
-
-function getRepoData(repoUrl) {
-  // This regex will handle both SSH and HTTPS URLs
-  const regex =
-    /(?:git@github\.com:|https:\/\/github.com\/)(.+)\/(.+)(?:\.git)?/i;
-  const match = regex.exec(repoUrl);
-
-  if (!match) {
-    console.log(`No match found for repoUrl: ${repoUrl}`);
-    return null;
-  }
-
-  return {
-    owner: match[1],
-    repo: match[2],
-  };
+async function downloadFile(url, outputPath) {
+  const writer = require("fs").createWriteStream(outputPath);
+  const response = await axios.get(url, { responseType: "stream" });
+  response.data.pipe(writer);
+  return new Promise((resolve, reject) => {
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
 }
+
+async function run() {
+  try {
+    const tarballPath = "./trufflehog.tar.gz";
+    await downloadFile(
+      "https://github.com/trufflesecurity/trufflehog/releases/download/v3.40.0/trufflehog_3.40.0_linux_amd64.tar.gz",
+      tarballPath
+    );
+
+    // Extract TruffleHog tarball
+    await tar.x({ file: tarballPath });
+
+    // Get the path for the output file from the action's inputs
+    const secretsFilePath = core.getInput("secrets-file");
+
+    let output = '';
+    let errorOutput = '';
+
+    const options = {};
+    options.listeners = {
+        stdout: (data) => {
+            output += data.toString();
+        },
+        stderr: (data) => {
+            errorOutput += data.toString();
+        }
+    };
+
+    await exec.exec(`./trufflehog`, [
+      "git",
+      "file://./",
+      "--since-commit",
+      `${process.env.GITHUB_SHA}`,
+      "--branch",
+      "HEAD",
+      "--fail",
+      "--no-update",
+      "--json",
+      "--no-verification"
+    ], options);
+
+    if (errorOutput) {
+        // Handle the error output if necessary
+        console.error(errorOutput);
+    }
+
+    fs.writeFileSync(secretsFilePath, output);
+
+    fs.readFile(filePath, "utf8", async (err, data) => {
+      if (err) {
+        if (!data) {
+          console.log("No data found, skipping processing...");
+        } else {
+          console.log(`Error reading file from disk: ${err}`);
+        }
+        return;
+      }
+
+      if (data.trim().length === 0) {
+        console.log("Empty file found, skipping processing...");
+        return;
+      }
+
+      try {
+        const jsonData = JSON.parse(data);
+
+        const repoData = getRepoData(
+          jsonData.SourceMetadata.Data.Git.repository
+        );
+        if (!repoData) {
+          console.log("No repo data found, skipping processing...");
+          return;
+        }
+
+        const commentBody = `🚨 Secret Detected 🚨\nSecret detected at line ${jsonData.SourceMetadata.Data.Git.line} in file ${jsonData.SourceMetadata.Data.Git.file}. Please review.`;
+
+        try {
+          const prs = await octokit.pulls.list({
+            owner: repoData.owner,
+            repo: repoData.repo,
+          });
+
+          for (const pr of prs.data) {
+            if (pr.state === "open") {
+              const commitId = await octokit.repos.getCommit({
+                owner: repoData.owner,
+                repo: repoData.repo,
+                ref: pr.head.sha,
+              });
+
+              await octokit.pulls.createReviewComment({
+                owner: repoData.owner,
+                repo: repoData.repo,
+                pull_number: pr.number,
+                body: commentBody,
+                commit_id: commitId.data.sha,
+                path: jsonData.SourceMetadata.Data.Git.file,
+                line: jsonData.SourceMetadata.Data.Git.line,
+                side: "RIGHT", // assuming the secret was added, not removed
+              });
+            }
+          }
+        } catch (e) {
+          if (
+            e.status === 422 &&
+            e.message.includes("PullRequestReviewComment") &&
+            e.message.includes("pull_request_review_thread.path") &&
+            e.message.includes("pull_request_review_thread.diff_hunk")
+          ) {
+            // Ignore the specific error relating to pull_request_review_thread.diff_hunk
+          } else if (e.status) {
+            console.log(`GitHub returned an error: ${e.status}`);
+            console.log(e.message);
+          } else {
+            console.log("Error occurred", e);
+          }
+        }
+      } catch (e) {
+        console.log("Error parsing JSON:", e);
+      }
+    });
+
+    function getRepoData(repoUrl) {
+      // This regex will handle both SSH and HTTPS URLs
+      const regex =
+        /(?:git@github\.com:|https:\/\/github.com\/)(.+)\/(.+)(?:\.git)?/i;
+      const match = regex.exec(repoUrl);
+
+      if (!match) {
+        console.log(`No match found for repoUrl: ${repoUrl}`);
+        return null;
+      }
+
+      return {
+        owner: match[1],
+        repo: match[2],
+      };
+    }
+  } catch (error) {
+    core.setFailed(`Action failed with error: ${error}`);
+  }
+}
+
+run();

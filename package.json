@@ -4,8 +4,12 @@
   "private": true,
   "dependencies": {
     "@actions/core": "^1.10.0",
+    "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
-    "@octokit/rest": "^18.12.0"
+    "@octokit/rest": "^18.12.0",
+    "axios": "^1.4.0",
+    "fs": "0.0.1-security",
+    "tar": "^6.1.15"
   },
   "description": "Detects Secrets on a GitHub Pull Request and Comments to Request Remediation",
   "main": "index.js",
