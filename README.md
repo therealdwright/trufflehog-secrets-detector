@@ -12,14 +12,14 @@ A GitHub Action that scans a repository for secrets using Trufflehog, and if any
 
 Add the following step to your GitHub Actions workflow:
 
-\`\`\`yaml
+```yaml
 - name: Trufflehog PR Commenter
   uses: therealdwright/trufflehog-secrets-detector@v1.0.0
   with:
     secrets-file: 'path_to_output.json' # Optional, defaults to 'secrets.json'
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-\`\`\`
+```
 
 ## Inputs
 
