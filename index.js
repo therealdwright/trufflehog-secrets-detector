@@ -1,7 +1,7 @@
 const axios = require("axios");
 const core = require("@actions/core");
 const exec = require("@actions/exec");
-const fs = require("fs");
+const fs = require("fs").promises;
 const tar = require("tar");
 const { Octokit } = require("@octokit/rest");
 
@@ -9,7 +9,7 @@ const token = process.env["GITHUB_TOKEN"];
 const octokit = new Octokit({ auth: `token ${token}` });
 
 const commit = core.getInput("commit");
-const filePath = core.getInput("secrets-file");
+const secretsFilePath = core.getInput("secrets-file");
 
 async function downloadFile(url, outputPath) {
   const writer = require("fs").createWriteStream(outputPath);
@@ -24,7 +24,7 @@ async function downloadFile(url, outputPath) {
 async function checkForSecrets() {
   let secretsDetected = false;
 
-  const data = await fs.promises.readFile(filePath, "utf8");
+  const data = await fs.readFile(secretsFilePath, "utf8");
   if (!data || data.trim().length === 0) {
     console.log("No data or empty file found, skipping processing...");
     return secretsDetected;
@@ -102,8 +102,6 @@ async function run() {
       tarballPath
     );
     await tar.x({ file: tarballPath });
-
-    const secretsFilePath = core.getInput("secrets-file");
 
     let output = "";
     const options = {
