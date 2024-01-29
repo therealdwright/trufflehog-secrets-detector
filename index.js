@@ -24,9 +24,17 @@ async function downloadFile(url, outputPath) {
 async function checkForSecrets() {
   let secretsDetected = false;
 
-  const data = await fs.readFile(secretsFilePath, "utf8");
-  if (!data || data.trim().length === 0) {
-    console.log("No data or empty file found, skipping processing...");
+  let data;
+  try {
+      data = fs.readFileSync(secretsFilePath, "utf8");
+  } catch (err) {
+      console.error(`Error reading file: ${err}`);
+      throw err;
+  }
+
+  // If the file is empty or only contains an empty array, assume no secrets found
+  if (!data || data.trim() === "[]") {
+    console.log("No secrets found, skipping processing...");
     return secretsDetected;
   }
 
@@ -95,6 +103,11 @@ function getRepoData(repoUrl) {
 }
 
 async function run() {
+  // Ensure secrets.json exists at the start
+  if (!fs.existsSync(secretsFilePath)) {
+    fs.writeFileSync(secretsFilePath, "[]"); // Create an empty JSON array
+  }
+
   try {
     const tarballPath = "./trufflehog.tar.gz";
     await downloadFile(
@@ -103,7 +116,6 @@ async function run() {
     );
     await tar.x({ file: tarballPath });
 
-    let output = "";
     const options = {
       listeners: {
         stdout: (data) => {
@@ -132,9 +144,9 @@ async function run() {
         ],
         options
       );
-      fs.writeFileSync(secretsFilePath, output);
     } catch (error) {
       console.error(`Error executing trufflehog: ${error}`);
+      throw error;
     }
 
     const secretsFound = await checkForSecrets();
