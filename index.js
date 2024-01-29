@@ -1,7 +1,7 @@
 const axios = require("axios");
 const core = require("@actions/core");
 const exec = require("@actions/exec");
-const fs = require("fs").promises;
+const fs = require("fs");
 const tar = require("tar");
 const { Octokit } = require("@octokit/rest");
 
